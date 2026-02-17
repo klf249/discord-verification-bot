@@ -1,11 +1,29 @@
 # Fichiers de configuration sensibles
 config.py
+.env
 *.db
 *.log
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environnements virtuels
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
 .vscode/
-.env
+.idea/
+*.swp
+*.swo
+*~
 
 # Sauvegardes
 *.backup
@@ -14,3 +32,7 @@ __pycache__/
 # Dossiers temporaires
 temp/
 tmp/
+uploads/
+
+# Render
+render.yaml

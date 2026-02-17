@@ -1,2 +1,1 @@
-web: gunicorn webapp:app
-worker: python bot.py
+worker: cd bot && python main.py

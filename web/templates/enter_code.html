@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrer le code</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 450px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            animation: slideUp 0.5s ease;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            transition: border 0.3s;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+        input:focus {
+            border-color: #5865F2;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #5865F2;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #4752C4;
+        }
+        .info {
+            margin-top: 20px;
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔑 Code secret</h1>
+        <p>Entrez le code que vous avez reçu sur Discord</p>
+        
+        <form method="post" action="/submit-code">
+            <input type="hidden" name="token" value="{{ token }}">
+            <label for="code">Code à 6 chiffres</label>
+            <input type="text" id="code" name="code" placeholder="123456" maxlength="6" pattern="[0-9]{6}" required>
+            <button type="submit">Vérifier</button>
+        </form>
+        
+        <div class="info">
+            Si vous n'avez pas reçu de code, contactez un staff.
+        </div>
+    </div>
+</body>
+</html>

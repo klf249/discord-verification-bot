@@ -1,25 +1,23 @@
-# Bot de Vérification Discord avec Téléphone
+# 🤖 Bot de Vérification Discord (partie bot)
 
-Système de vérification par téléphone pour Discord avec site web.
+Ce dossier contient le bot Discord du système de vérification par téléphone.
 
-## Fonctionnalités
-- ✅ Bouton Discord interactif
-- 📱 Site web pour saisir le numéro
-- 🔐 Génération de codes secrets
-- 👮 Notifications pour les staffs
-- 🎨 Embeds personnalisables
+## Installation locale
 
-## Installation
-1. `pip install -r requirements.txt`
-2. Copie `config.example.py` vers `config.py`
-3. Modifie `config.py` avec tes IDs
-4. Lance `python bot.py` et `python webapp.py`
+1. Copier `.env.example` vers `.env` et modifier avec vos tokens.
+2. Copier `config.example.py` vers `config.py` (si vous n'utilisez pas les variables d'env).
+3. Installer les dépendances : `pip install -r requirements.txt`
+4. Initialiser la BDD : `python database.py`
+5. Lancer le bot : `python bot/main.py`
 
-## Commandes Discord
-- `!setup` - Crée un embed personnalisé
-- `!setup_simple` - Version rapide
-- `!setup_template` - Templates préfaits
-- `!code` - Gère les codes de vérification
+## Commandes disponibles
 
-## Hébergement
-Voir `GUIDE_HOSTING.md` pour les options gratuites.
+- `!setup` : Crée un embed de vérification avec bouton.
+- `!code` : Liste les demandes en attente.
+- `!code <jeton> <code>` : Associe un code à une demande.
+- `!stats` : Affiche les statistiques.
+- `!clean` : Supprime les jetons expirés.
+
+## Déploiement sur Render
+
+Le fichier `render.yaml` est fourni. Connectez votre dépôt GitHub à Render et utilisez le blueprint.

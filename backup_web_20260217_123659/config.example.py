@@ -32,6 +32,3 @@ DEFAULT_WELCOME_DESCRIPTION = "Vérifie ton compte pour accéder à tous les sal
 DEFAULT_INSTRUCTIONS = "1️⃣ Clique sur le bouton\n2️⃣ Entre ton numéro\n3️⃣ Reçois un code\n4️⃣ Accès accordé"
 DEFAULT_PRIVACY = "Ton numéro est supprimé après vérification"
 DEFAULT_COLOR = 0x5865F2  # Bleu Discord
-
-# URL de l'API du bot (pour la communication site <-> bot)
-BOT_API_URL = os.getenv("BOT_API_URL", "http://localhost:5001")

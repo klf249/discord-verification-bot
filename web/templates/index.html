@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vérification Discord</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            animation: slideUp 0.5s ease;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .header {
+            background: #5865F2;
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .discord-logo {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }
+        .content { padding: 40px 30px; }
+        .feature {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            transition: transform 0.2s;
+        }
+        .feature:hover { transform: translateX(5px); }
+        .feature-icon {
+            width: 50px;
+            height: 50px;
+            background: #5865F2;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            margin-right: 15px;
+        }
+        .feature-text h3 { font-size: 18px; margin-bottom: 5px; color: #333; }
+        .feature-text p { color: #666; font-size: 14px; }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background: #5865F2;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 18px;
+            transition: background 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn:hover { background: #4752C4; }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        .status {
+            display: inline-block;
+            padding: 6px 12px;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="discord-logo">
+                <img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/636e0a6a49cf127bf92de1e2_icon_clyde_blurple_RGB.png" alt="Discord" style="width: 50px;">
+            </div>
+            <h1>Vérification Discord</h1>
+            <p>Système sécurisé de vérification par téléphone</p>
+        </div>
+        
+        <div class="content">
+            <div class="feature">
+                <div class="feature-icon">🔐</div>
+                <div class="feature-text">
+                    <h3>Sécurisé</h3>
+                    <p>Vérification en 2 étapes</p>
+                </div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">⚡</div>
+                <div class="feature-text">
+                    <h3>Rapide</h3>
+                    <p>Moins de 2 minutes</p>
+                </div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🔒</div>
+                <div class="feature-text">
+                    <h3>Confidentiel</h3>
+                    <p>Numéro supprimé après vérification</p>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <span class="status">✅ Système opérationnel</span>
+            </div>
+            
+            <a href="https://discord.com" class="btn" target="_blank">
+                Ouvrir Discord
+            </a>
+        </div>
+        
+        <div class="footer">
+            &copy; 2026 - Système de vérification Discord
+        </div>
+    </div>
+</body>
+</html>

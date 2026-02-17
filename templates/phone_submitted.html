@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Numéro envoyé</title>
+    <style>
+        body { font-family: Arial; background: #5865F2; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background: white; padding: 30px; border-radius: 10px; max-width: 400px; width: 90%; text-align: center; }
+        .success { color: #28a745; font-size: 48px; margin: 20px 0; }
+        button { background: #5865F2; color: white; padding: 12px 30px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success">✅</div>
+        <h2>Numéro envoyé !</h2>
+        <p>Un staff va vérifier ton numéro et te contacter.</p>
+        <p>Reviens sur cette page quand tu auras reçu le code.</p>
+        <button onclick="window.location.href='/enter-code/{{ token }}'">J'ai reçu un code</button>
+    </div>
+</body>
+</html>

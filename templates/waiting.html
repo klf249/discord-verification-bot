@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>En attente</title>
+    <style>
+        body { font-family: Arial; background: #5865F2; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background: white; padding: 30px; border-radius: 10px; max-width: 400px; width: 90%; text-align: center; }
+        .loading { border: 5px solid #f3f3f3; border-top: 5px solid #5865F2; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        button { background: #5865F2; color: white; padding: 12px 30px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>⏳ En attente du code</h2>
+        <div class="loading"></div>
+        <p>Un staff prépare ton code secret.<br>Reviens dans quelques instants.</p>
+        <button onclick="location.reload()">🔄 Actualiser</button>
+    </div>
+</body>
+</html>

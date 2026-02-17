@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Erreur</title>
+    <style>
+        body { font-family: Arial; background: #5865F2; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background: white; padding: 30px; border-radius: 10px; max-width: 400px; width: 90%; text-align: center; }
+        .error { color: #dc3545; font-size: 64px; margin: 20px 0; }
+        button { background: #5865F2; color: white; padding: 12px 30px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="error">❌</div>
+        <h2>Erreur</h2>
+        <p>{{ message }}</p>
+        <button onclick="window.location.href='https://discord.com'">Retour à Discord</button>
+    </div>
+</body>
+</html>

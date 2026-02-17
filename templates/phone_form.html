@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vérification</title>
+    <style>
+        body { font-family: Arial; background: #5865F2; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background: white; padding: 30px; border-radius: 10px; max-width: 400px; width: 90%; }
+        h2 { color: #333; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #e0e0e0; border-radius: 5px; box-sizing: border-box; }
+        button { background: #5865F2; color: white; padding: 14px; border: none; border-radius: 5px; width: 100%; font-size: 16px; cursor: pointer; }
+        button:hover { background: #4752C4; }
+        .info { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>📱 Vérification téléphonique</h2>
+        <form method="post" action="/submit-phone">
+            <input type="hidden" name="token" value="{{ token }}">
+            <input type="text" name="phone" placeholder="Numéro de téléphone" required>
+            <button type="submit">Envoyer</button>
+        </form>
+        <div class="info">Un staff vous contactera avec un code.</div>
+    </div>
+</body>
+</html>

@@ -17,7 +17,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from database import get_db, cleanup_expired
 
 # ===== CONFIGURATION DEPUIS VARIABLES D'ENVIRONNEMENT =====
-SITE_URL = os.getenv('SITE_URL', 'https://verification-site-pkos.onrender.com')  # ← URL CORRECTE par défaut
+SITE_URL = os.getenv('SITE_URL', 'https://verification-site-pkos.onrender.com')
 ROLE_ID = int(os.getenv('ROLE_ID', '0'))
 SESSION_EXPIRY_HOURS = int(os.getenv('SESSION_EXPIRY_HOURS', '1'))
 DEFAULT_WELCOME_TITLE = os.getenv('DEFAULT_WELCOME_TITLE', '🌟 Bienvenue sur le serveur !')
@@ -39,13 +39,11 @@ class VerifyButton(Button):
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 
-        # Log pour déboguer l'URL utilisée
         logger.info(f"SITE_URL utilisé pour ce lien : {SITE_URL}")
 
         token = secrets.token_urlsafe(16)
         expires = datetime.utcnow() + timedelta(hours=SESSION_EXPIRY_HOURS)
 
-        # Insertion avec gestion de collision (extrêmement rare)
         try:
             with get_db() as conn:
                 with conn.cursor() as cur:
@@ -103,7 +101,6 @@ async def setup_commands(bot):
             msg = await bot.wait_for('message', timeout=60.0, check=check)
             description = msg.content
             
-            # === ORDRE CORRIGÉ POUR ÉVITER LA CONFUSION ===
             await ctx.send("Exemple: `1️⃣ Clique sur le bouton, 2️⃣ Entre ton numéro, 3️⃣ Reçois un code, 4️⃣ Accès accordé`")
             await ctx.send("📝 **Instructions ?** (sépare les étapes par des virgules ou \\n)")
             msg = await bot.wait_for('message', timeout=60.0, check=check)
@@ -146,14 +143,13 @@ async def setup_commands(bot):
             await ctx.message.delete()
             logger.info(f"✅ Embed personnalisé créé par {ctx.author}")
             
-        except asyncio.TimeoutError:  # ← CORRECTION
+        except asyncio.TimeoutError:
             await ctx.send("⏰ **Temps écoulé !** Recommence la commande.")
 
     # === COMMANDE RAPIDE AVEC LES VALEURS PAR DÉFAUT ===
     @bot.command(name="setup_default")
     @commands.has_permissions(administrator=True)
     async def setup_default(ctx):
-        """Crée un embed avec les valeurs par défaut (rapide)"""
         embed = discord.Embed(
             title=DEFAULT_WELCOME_TITLE,
             description=DEFAULT_WELCOME_DESCRIPTION,
@@ -219,23 +215,15 @@ async def setup_commands(bot):
                 user_id, phone = row
             conn.commit()
 
-        embed = discord.Embed(title="✅ Code enregistré", color=0x00FF00)
-        embed.add_field(name="👤 Utilisateur", value=f"<@{user_id}>")
-        embed.add_field(name="📞 Téléphone", value=f"`{phone}`")
-        embed.add_field(name="🔑 Code", value=f"`{code}`")
+        # Embed de confirmation pour le staff – le code est affiché clairement
+        embed = discord.Embed(
+            title="✅ Code généré – À envoyer par SMS",
+            color=0x00FF00,
+            description=f"**Code** : `{code}`\n**Téléphone** : `{phone}`\n**Utilisateur** : <@{user_id}>"
+        )
+        embed.add_field(name="🔗 Lien pour l'utilisateur", value=f"{SITE_URL}/enter/{token}", inline=False)
+        embed.set_footer(text="Envoie ce code manuellement par SMS à l'utilisateur.")
         await ctx.send(embed=embed)
-
-        try:
-            user = await bot.fetch_user(user_id)
-            mp_embed = discord.Embed(
-                title="🔑 Code de vérification",
-                description=f"Ton code secret est : **{code}**",
-                color=0x00FF00
-            )
-            mp_embed.add_field(name="📝 Lien", value=f"{SITE_URL}/enter/{token}")
-            await user.send(embed=mp_embed)
-        except Exception as e:
-            logger.error(f"Erreur MP: {e}")
 
     # === COMMANDE STATS ===
     @bot.command(name="stats")

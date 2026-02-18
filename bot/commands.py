@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import logging
 import os
 import sys
+import asyncio
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
@@ -37,15 +38,30 @@ class VerifyButton(Button):
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
+
+        # Log pour déboguer l'URL utilisée
+        logger.info(f"SITE_URL utilisé pour ce lien : {SITE_URL}")
+
         token = secrets.token_urlsafe(16)
         expires = datetime.utcnow() + timedelta(hours=SESSION_EXPIRY_HOURS)
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "INSERT INTO verifications (token, user_id, expires_at) VALUES (%s, %s, %s)",
-                    (token, interaction.user.id, expires)
-                )
-            conn.commit()
+
+        # Insertion avec gestion de collision (extrêmement rare)
+        try:
+            with get_db() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "INSERT INTO verifications (token, user_id, expires_at) VALUES (%s, %s, %s)",
+                        (token, interaction.user.id, expires)
+                    )
+                conn.commit()
+        except Exception as e:
+            logger.error(f"Erreur lors de l'insertion du token {token}: {e}")
+            await interaction.followup.send(
+                "❌ Une erreur technique est survenue. Veuillez réessayer.",
+                ephemeral=True
+            )
+            return
+
         link = f"{SITE_URL}/verify/{token}"
         embed = discord.Embed(
             title="📱 Vérification téléphonique",
@@ -53,8 +69,10 @@ class VerifyButton(Button):
             color=0x5865F2
         )
         embed.add_field(name="⏰ Expiration", value=f"Ce lien expire dans {SESSION_EXPIRY_HOURS} heure")
+        embed.add_field(name="🔗 Lien direct", value=f"[Clique ici pour vérifier]({link})", inline=False)
+
         view = View()
-        view.add_item(Button(label="✅ Commencer", url=link, style=discord.ButtonStyle.link))
+        view.add_item(Button(label="✅ Commencer la vérification", url=link, style=discord.ButtonStyle.link))
         await interaction.followup.send(embed=embed, view=view, ephemeral=True)
 
 class VerifyView(View):
@@ -85,8 +103,9 @@ async def setup_commands(bot):
             msg = await bot.wait_for('message', timeout=60.0, check=check)
             description = msg.content
             
-            await ctx.send("📝 **Instructions ?** (sépare les étapes par des virgules ou \\n)")
+            # === ORDRE CORRIGÉ POUR ÉVITER LA CONFUSION ===
             await ctx.send("Exemple: `1️⃣ Clique sur le bouton, 2️⃣ Entre ton numéro, 3️⃣ Reçois un code, 4️⃣ Accès accordé`")
+            await ctx.send("📝 **Instructions ?** (sépare les étapes par des virgules ou \\n)")
             msg = await bot.wait_for('message', timeout=60.0, check=check)
             instructions = msg.content.replace(",", "\n")
             
@@ -127,7 +146,7 @@ async def setup_commands(bot):
             await ctx.message.delete()
             logger.info(f"✅ Embed personnalisé créé par {ctx.author}")
             
-        except TimeoutError:
+        except asyncio.TimeoutError:  # ← CORRECTION
             await ctx.send("⏰ **Temps écoulé !** Recommence la commande.")
 
     # === COMMANDE RAPIDE AVEC LES VALEURS PAR DÉFAUT ===
@@ -164,8 +183,7 @@ async def setup_commands(bot):
                 return
             embed = discord.Embed(title=f"📋 Demandes en attente ({len(pending)})", color=0x3498db)
             for p in pending[:5]:
-                expires = p[3]  # déjà un datetime ou string? À adapter si besoin
-                # Si expires est un datetime, on peut l'utiliser directement
+                expires = p[3]
                 if isinstance(expires, str):
                     expires = datetime.fromisoformat(expires)
                 minutes = int((expires - datetime.utcnow()).total_seconds() / 60)

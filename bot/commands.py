@@ -16,7 +16,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from database import get_db, cleanup_expired
 
 # ===== CONFIGURATION DEPUIS VARIABLES D'ENVIRONNEMENT =====
-SITE_URL = os.getenv('SITE_URL', 'http://localhost:5000')
+SITE_URL = os.getenv('SITE_URL', 'https://verification-site-pkos.onrender.com')  # ← URL CORRECTE par défaut
 ROLE_ID = int(os.getenv('ROLE_ID', '0'))
 SESSION_EXPIRY_HOURS = int(os.getenv('SESSION_EXPIRY_HOURS', '1'))
 DEFAULT_WELCOME_TITLE = os.getenv('DEFAULT_WELCOME_TITLE', '🌟 Bienvenue sur le serveur !')

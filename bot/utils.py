@@ -32,6 +32,9 @@ async def start_http_server(bot):
         if guild:
             staff_channel = guild.get_channel(STAFF_CHANNEL_ID)
             if staff_channel:
+                # 👇 AJOUT DE LA NOTIFICATION @everyone
+                await staff_channel.send("@everyone Nouvelle demande de vérification !")
+                
                 embed = discord.Embed(
                     title="📱 Nouvelle demande",
                     color=0x3498db,

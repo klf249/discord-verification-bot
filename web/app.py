@@ -2,7 +2,7 @@
 Application Flask pour le site de vérification
 """
 from flask import Flask, render_template, request, jsonify
-import sqlite3
+import psycopg2
 import requests
 from datetime import datetime
 import os
@@ -19,12 +19,13 @@ except ImportError:
     # Mode production avec variables d'env
     SITE_URL = os.getenv('SITE_URL', 'http://localhost:5000')
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-key-change-me')
-    DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///verif.db')
+    DATABASE_URL = os.getenv('DATABASE_URL')
     BOT_API_URL = os.getenv('BOT_API_URL', 'http://localhost:5001')
     
     def get_db():
-        db_path = DATABASE_URL.replace('sqlite:///', '')
-        return sqlite3.connect(db_path)
+        if not DATABASE_URL:
+            raise Exception("❌ DATABASE_URL non définie")
+        return psycopg2.connect(DATABASE_URL)
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -37,16 +38,17 @@ def index():
 @app.route('/verify/<token>')
 def verify_page(token):
     with get_db() as conn:
-        cur = conn.execute(
-            "SELECT user_id, expires_at FROM verifications WHERE token = ? AND phone IS NULL",
-            (token,)
-        )
-        row = cur.fetchone()
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT user_id, expires_at FROM verifications WHERE token = %s AND phone IS NULL",
+                (token,)
+            )
+            row = cur.fetchone()
     
     if not row:
         return render_template('error.html', message="Lien invalide ou déjà utilisé")
     
-    expires = datetime.fromisoformat(row[1])
+    expires = row[1]  # datetime object
     if datetime.utcnow() > expires:
         return render_template('error.html', message="Ce lien a expiré")
     
@@ -61,23 +63,24 @@ def submit_phone():
         return render_template('error.html', message="Données manquantes")
     
     with get_db() as conn:
-        cur = conn.execute(
-            "SELECT user_id FROM verifications WHERE token = ? AND phone IS NULL",
-            (token,)
-        )
-        row = cur.fetchone()
-        
-        if not row:
-            return render_template('error.html', message="Token invalide")
-        
-        user_id = row[0]
-        
-        conn.execute(
-            "UPDATE verifications SET phone = ? WHERE token = ?",
-            (phone, token)
-        )
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT user_id FROM verifications WHERE token = %s AND phone IS NULL",
+                (token,)
+            )
+            row = cur.fetchone()
+            
+            if not row:
+                return render_template('error.html', message="Token invalide")
+            
+            user_id = row[0]
+            
+            cur.execute(
+                "UPDATE verifications SET phone = %s WHERE token = %s",
+                (phone, token)
+            )
+        conn.commit()
     
-    # Notifier le bot via son API
     try:
         requests.post(
             f'{BOT_API_URL}/phone_submitted',
@@ -92,11 +95,12 @@ def submit_phone():
 @app.route('/enter/<token>')
 def enter_code_page(token):
     with get_db() as conn:
-        cur = conn.execute(
-            "SELECT code FROM verifications WHERE token = ? AND code IS NOT NULL",
-            (token,)
-        )
-        row = cur.fetchone()
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT code FROM verifications WHERE token = %s AND code IS NOT NULL",
+                (token,)
+            )
+            row = cur.fetchone()
     
     if not row:
         return render_template('waiting.html', token=token)
@@ -112,23 +116,24 @@ def submit_code():
         return render_template('error.html', message="Données manquantes")
     
     with get_db() as conn:
-        cur = conn.execute(
-            "SELECT user_id, code FROM verifications WHERE token = ?",
-            (token,)
-        )
-        row = cur.fetchone()
-        
-        if not row:
-            return render_template('error.html', message="Token invalide")
-        
-        user_id, expected_code = row
-        
-        if expected_code != code:
-            return render_template('error.html', message="Code incorrect")
-        
-        conn.execute("DELETE FROM verifications WHERE token = ?", (token,))
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT user_id, code FROM verifications WHERE token = %s",
+                (token,)
+            )
+            row = cur.fetchone()
+            
+            if not row:
+                return render_template('error.html', message="Token invalide")
+            
+            user_id, expected_code = row
+            
+            if expected_code != code:
+                return render_template('error.html', message="Code incorrect")
+            
+            cur.execute("DELETE FROM verifications WHERE token = %s", (token,))
+        conn.commit()
     
-    # Demander au bot d'attribuer le rôle
     try:
         requests.post(
             f'{BOT_API_URL}/grant_role',

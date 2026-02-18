@@ -33,7 +33,7 @@ if not BOT_TOKEN:
 # ===== IMPORTS (après configuration) =====
 from database import init_database
 from bot.commands import setup_commands
-from bot.views import setup_views
+from bot.commands import setup_views
 from bot.utils import start_http_server
 
 # Configuration des logs

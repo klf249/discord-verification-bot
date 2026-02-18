@@ -9,7 +9,7 @@ alembic==1.12.1
 
 # Utilitaires
 python-dotenv==1.0.0
-audioop-lts      # ← PLUS DE VERSION SPÉCIFIQUE
+audioop-lts
 pyyaml==6.0.1
 
 # Web
@@ -17,4 +17,5 @@ flask==3.0.0
 gunicorn==21.2.0
 python-dotenv==1.0
 
+# PostgreSQL
 psycopg2-binary==2.9.9

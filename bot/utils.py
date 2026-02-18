@@ -4,6 +4,7 @@ Utilitaires pour le bot (serveur HTTP)
 from aiohttp import web
 import discord
 import logging
+import os
 from datetime import datetime
 
 import sys
@@ -11,7 +12,12 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from database import get_db
-from config import ROLE_ID, GUILD_ID, STAFF_CHANNEL_ID
+
+# ===== CONFIGURATION DEPUIS VARIABLES D'ENVIRONNEMENT =====
+ROLE_ID = int(os.getenv('ROLE_ID', '0'))
+GUILD_ID = int(os.getenv('GUILD_ID', '0'))
+STAFF_CHANNEL_ID = int(os.getenv('STAFF_CHANNEL_ID', '0'))
+PORT = int(os.getenv('PORT', 5001))
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +70,7 @@ async def start_http_server(bot):
     app.router.add_post('/grant_role', handle_grant_role)
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', int(os.getenv("PORT", 5001)))
+    site = web.TCPSite(runner, '0.0.0.0', PORT)
     await site.start()
-    logger.info("🌐 Serveur HTTP sur port int(os.getenv("PORT", 5001))")
+    logger.info(f"🌐 Serveur HTTP sur le port {PORT}")
     return runner

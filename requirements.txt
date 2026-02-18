@@ -9,7 +9,6 @@ alembic==1.12.1
 
 # Utilitaires
 python-dotenv==1.0.0
-audioop-lts
 pyyaml==6.0.1
 
 # Web

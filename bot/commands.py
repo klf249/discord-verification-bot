@@ -7,17 +7,24 @@ from discord.ui import Button, View
 import secrets
 from datetime import datetime, timedelta
 import logging
-
+import os
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).parent.parent))
 
 from database import get_db, cleanup_expired
-from config import (
-    SITE_URL, ROLE_ID, SESSION_EXPIRY_HOURS,
-    DEFAULT_WELCOME_TITLE, DEFAULT_WELCOME_DESCRIPTION,
-    DEFAULT_INSTRUCTIONS, DEFAULT_PRIVACY, DEFAULT_COLOR
-)
+
+# ===== CONFIGURATION DEPUIS VARIABLES D'ENVIRONNEMENT =====
+SITE_URL = os.getenv('SITE_URL', 'http://localhost:5000')
+ROLE_ID = int(os.getenv('ROLE_ID', '0'))
+SESSION_EXPIRY_HOURS = int(os.getenv('SESSION_EXPIRY_HOURS', '1'))
+DEFAULT_WELCOME_TITLE = os.getenv('DEFAULT_WELCOME_TITLE', '🌟 Bienvenue sur le serveur !')
+DEFAULT_WELCOME_DESCRIPTION = os.getenv('DEFAULT_WELCOME_DESCRIPTION', 'Vérifie ton compte pour accéder à tous les salons')
+DEFAULT_INSTRUCTIONS = os.getenv('DEFAULT_INSTRUCTIONS', '1️⃣ Clique sur le bouton\n2️⃣ Entre ton numéro\n3️⃣ Reçois un code\n4️⃣ Accès accordé')
+DEFAULT_PRIVACY = os.getenv('DEFAULT_PRIVACY', 'Ton numéro est supprimé après vérification')
+# Convertir la couleur hexadécimale (ex: "0x5865F2") en int
+DEFAULT_COLOR = int(os.getenv('DEFAULT_COLOR', '0x5865F2'), 16)
 
 logger = logging.getLogger(__name__)
 

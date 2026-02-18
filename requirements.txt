@@ -1,6 +1,6 @@
 # Bot Discord
 discord.py==2.3.2
-aiohttp==3.9.1
+aiohttp==3.11.0
 requests==2.31.0
 
 # Base de données
@@ -9,10 +9,10 @@ alembic==1.12.1
 
 # Utilitaires
 python-dotenv==1.0.0
-audioop-lts==0.0.3
+audioop-lts      # ← PLUS DE VERSION SPÉCIFIQUE
 pyyaml==6.0.1
 
 # Web
 flask==3.0.0
 gunicorn==21.2.0
-python-dotenv==1.0.0
+python-dotenv==1.0

@@ -43,3 +43,4 @@ def cleanup_expired():
 if __name__ == "__main__":
     init_database()
     print("✅ Base de données PostgreSQL initialisée")
+# PostgreSQL version

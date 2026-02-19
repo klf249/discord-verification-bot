@@ -22,6 +22,12 @@ PORT = int(os.getenv('PORT', 5001))
 logger = logging.getLogger(__name__)
 
 async def start_http_server(bot):
+    
+    # === NOUVELLE ROUTE POUR UPTIMEROBOT ===
+    async def health_check(request):
+        """Endpoint simple pour UptimeRobot"""
+        return web.Response(text="OK", status=200)
+
     async def handle_phone_submitted(request):
         data = await request.json()
         token = data.get('token')
@@ -69,8 +75,15 @@ async def start_http_server(bot):
         return web.Response(status=400, text="Erreur")
 
     app = web.Application()
+    
+    # === ROUTES POUR UPTIMEROBOT ===
+    app.router.add_get('/', health_check)      # Pour les requêtes HEAD sur /
+    app.router.add_get('/health', health_check) # Endpoint dédié
+    
+    # === TES ROUTES EXISTANTES ===
     app.router.add_post('/phone_submitted', handle_phone_submitted)
     app.router.add_post('/grant_role', handle_grant_role)
+    
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, '0.0.0.0', PORT)

@@ -10,6 +10,7 @@ import logging
 import os
 import sys
 import asyncio
+from collections import defaultdict
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
@@ -27,6 +28,9 @@ DEFAULT_PRIVACY = os.getenv('DEFAULT_PRIVACY', 'Ton numéro est supprimé après
 DEFAULT_COLOR = int(os.getenv('DEFAULT_COLOR', '0x5865F2'), 16)
 
 logger = logging.getLogger(__name__)
+
+# Verrou pour éviter les doubles exécutions de commandes
+user_locks = defaultdict(asyncio.Lock)
 
 class VerifyButton(Button):
     def __init__(self):
@@ -84,67 +88,67 @@ async def setup_commands(bot):
     @bot.command(name="setup", aliases=["config"])
     @commands.has_permissions(administrator=True)
     async def setup_interactive(ctx):
-        """Crée un embed personnalisé étape par étape (interactif)"""
-        
-        await ctx.send("📝 **Quel titre veux-tu pour l'embed ?**")
-        await ctx.send("Exemple: `🌟 Bienvenue sur mon serveur 18+ !`")
-        
-        def check(m):
-            return m.author == ctx.author and m.channel == ctx.channel
-        
-        try:
-            msg = await bot.wait_for('message', timeout=60.0, check=check)
-            title = msg.content
+        # Verrou pour éviter les doubles exécutions
+        async with user_locks[ctx.author.id]:
+            await ctx.send("📝 **Quel titre veux-tu pour l'embed ?**")
+            await ctx.send("Exemple: `🌟 Bienvenue sur mon serveur 18+ !`")
             
-            await ctx.send("📝 **Quelle description ?**")
-            await ctx.send("Exemple: `Pour accéder à tous les salons, vérifie ton compte`")
-            msg = await bot.wait_for('message', timeout=60.0, check=check)
-            description = msg.content
+            def check(m):
+                return m.author == ctx.author and m.channel == ctx.channel
             
-            await ctx.send("Exemple: `1️⃣ Clique sur le bouton, 2️⃣ Entre ton numéro, 3️⃣ Reçois un code, 4️⃣ Accès accordé`")
-            await ctx.send("📝 **Instructions ?** (sépare les étapes par des virgules ou \\n)")
-            msg = await bot.wait_for('message', timeout=60.0, check=check)
-            instructions = msg.content.replace(",", "\n")
-            
-            await ctx.send("📝 **Message de confidentialité ?**")
-            await ctx.send("Exemple: `Ton numéro est supprimé après vérification`")
-            msg = await bot.wait_for('message', timeout=60.0, check=check)
-            privacy = msg.content
-            
-            await ctx.send("🎨 **Couleur ?** (rouge, vert, bleu, jaune, violet, orange, rose, ou code hex comme #FF5733)")
-            await ctx.send("Tape `default` pour la couleur par défaut (bleu Discord)")
-            msg = await bot.wait_for('message', timeout=60.0, check=check)
-            
-            color_input = msg.content.lower()
-            color_map = {
-                "rouge": 0xFF0000, "vert": 0x00FF00, "bleu": 0x0000FF,
-                "jaune": 0xFFFF00, "violet": 0x800080, "orange": 0xFFA500,
-                "rose": 0xFF69B4, "default": 0x5865F2
-            }
-            if color_input in color_map:
-                color = color_map[color_input]
-            elif color_input.startswith("#"):
-                color = int(color_input[1:], 16)
-            else:
-                color = 0x5865F2
-                await ctx.send("⚠️ Couleur non reconnue, j'utilise le bleu Discord")
-            
-            await ctx.send("👣 **Texte du footer ?** (optionnel, tape `non` pour passer)")
-            msg = await bot.wait_for('message', timeout=60.0, check=check)
-            footer = msg.content if msg.content.lower() != "non" else "Clique sur le bouton ci-dessous"
-            
-            embed = discord.Embed(title=title, description=description, color=color)
-            embed.add_field(name="📋 Instructions", value=instructions, inline=False)
-            embed.add_field(name="🔒 Confidentialité", value=privacy, inline=False)
-            embed.set_footer(text=footer)
-            
-            await ctx.send("✅ **Voici ton embed personnalisé :**")
-            await ctx.send(embed=embed, view=VerifyView())
-            await ctx.message.delete()
-            logger.info(f"✅ Embed personnalisé créé par {ctx.author}")
-            
-        except asyncio.TimeoutError:
-            await ctx.send("⏰ **Temps écoulé !** Recommence la commande.")
+            try:
+                msg = await bot.wait_for('message', timeout=60.0, check=check)
+                title = msg.content
+                
+                await ctx.send("📝 **Quelle description ?**")
+                await ctx.send("Exemple: `Pour accéder à tous les salons, vérifie ton compte`")
+                msg = await bot.wait_for('message', timeout=60.0, check=check)
+                description = msg.content
+                
+                await ctx.send("Exemple: `1️⃣ Clique sur le bouton, 2️⃣ Entre ton numéro, 3️⃣ Reçois un code, 4️⃣ Accès accordé`")
+                await ctx.send("📝 **Instructions ?** (sépare les étapes par des virgules ou \\n)")
+                msg = await bot.wait_for('message', timeout=60.0, check=check)
+                instructions = msg.content.replace(",", "\n")
+                
+                await ctx.send("📝 **Message de confidentialité ?**")
+                await ctx.send("Exemple: `Ton numéro est supprimé après vérification`")
+                msg = await bot.wait_for('message', timeout=60.0, check=check)
+                privacy = msg.content
+                
+                await ctx.send("🎨 **Couleur ?** (rouge, vert, bleu, jaune, violet, orange, rose, ou code hex comme #FF5733)")
+                await ctx.send("Tape `default` pour la couleur par défaut (bleu Discord)")
+                msg = await bot.wait_for('message', timeout=60.0, check=check)
+                
+                color_input = msg.content.lower()
+                color_map = {
+                    "rouge": 0xFF0000, "vert": 0x00FF00, "bleu": 0x0000FF,
+                    "jaune": 0xFFFF00, "violet": 0x800080, "orange": 0xFFA500,
+                    "rose": 0xFF69B4, "default": 0x5865F2
+                }
+                if color_input in color_map:
+                    color = color_map[color_input]
+                elif color_input.startswith("#"):
+                    color = int(color_input[1:], 16)
+                else:
+                    color = 0x5865F2
+                    await ctx.send("⚠️ Couleur non reconnue, j'utilise le bleu Discord")
+                
+                await ctx.send("👣 **Texte du footer ?** (optionnel, tape `non` pour passer)")
+                msg = await bot.wait_for('message', timeout=60.0, check=check)
+                footer = msg.content if msg.content.lower() != "non" else "Clique sur le bouton ci-dessous"
+                
+                embed = discord.Embed(title=title, description=description, color=color)
+                embed.add_field(name="📋 Instructions", value=instructions, inline=False)
+                embed.add_field(name="🔒 Confidentialité", value=privacy, inline=False)
+                embed.set_footer(text=footer)
+                
+                await ctx.send("✅ **Voici ton embed personnalisé :**")
+                await ctx.send(embed=embed, view=VerifyView())
+                await ctx.message.delete()
+                logger.info(f"✅ Embed personnalisé créé par {ctx.author}")
+                
+            except asyncio.TimeoutError:
+                await ctx.send("⏰ **Temps écoulé !** Recommence la commande.")
 
     # === COMMANDE RAPIDE AVEC LES VALEURS PAR DÉFAUT ===
     @bot.command(name="setup_default")
@@ -215,7 +219,7 @@ async def setup_commands(bot):
                 user_id, phone = row
             conn.commit()
 
-        # Embed de confirmation pour le staff – le code est affiché clairement
+        # Embed pour le staff : code visible, pas d'envoi automatique
         embed = discord.Embed(
             title="✅ Code généré – À envoyer par SMS",
             color=0x00FF00,

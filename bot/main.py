@@ -3,23 +3,33 @@
 Bot Discord - Point d'entrée principal
 Utilise les variables d'environnement directement (pour Render)
 """
-import discord
-from discord.ext import commands
 import os
 import sys
 import logging
 from pathlib import Path
 import re
+from datetime import datetime
+
+# IMPORTANT: ajouter la racine du projet au sys.path AVANT d'importer database
+# __file__ est bot/main.py -> parent = bot/, parent.parent = racine du repo
+project_root = str(Path(__file__).resolve().parent.parent)
+bot_dir = str(Path(__file__).resolve().parent)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+if bot_dir not in sys.path:
+    sys.path.insert(0, bot_dir)
+
+# Maintenant on peut importer database et les autres modules du repo
 from database import get_db
 
-# Ajouter le chemin parent pour les imports
-sys.path.append(str(Path(__file__).parent))
-sys.path.append(str(Path(__file__).parent.parent))
+import discord
+from discord.ext import commands
 
+# Importer les modules internes (qui se trouvent dans bot/)
 from bot.commands import setup_commands, setup_views
 from bot.utils import start_http_server
 
-# Configuration
+# Configuration à partir des variables d'environnement
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 GUILD_ID = int(os.getenv('GUILD_ID', '0'))
 STAFF_NUM_CHANNEL_ID = int(os.getenv('STAFF_NUM_CHANNEL_ID', '0'))
@@ -50,9 +60,10 @@ class VerificationBot(commands.Bot):
 
     async def setup_hook(self):
         logger.info("🚀 Configuration du bot...")
-        # DB init handled separately normally
+        # init DB si besoin: init_database() doit être appelé ailleurs si souhaité
         await setup_commands(self)
         setup_views(self)
+        # démarre le serveur HTTP interne
         self.http_server = await start_http_server(self)
         logger.info("✅ Bot configuré avec succès!")
 
@@ -66,7 +77,7 @@ class VerificationBot(commands.Bot):
         logger.info("🚀 Bot prêt!")
 
     async def on_message(self, message: discord.Message):
-        # Important: laisser la gestion des commandes
+        # Laisser la gestion des commandes
         await self.process_commands(message)
 
         # Ignorer les bots
@@ -118,7 +129,10 @@ class VerificationBot(commands.Bot):
 
         if not token_found:
             # Aucun token correspondant -> on ignore
-            await message.channel.send("❌ Aucun jeton trouvé dans la DB correspondant au message. Vérifie que le jeton est correct.", delete_after=10)
+            try:
+                await message.channel.send("❌ Aucun jeton trouvé en base correspondant au message. Vérifie que le jeton existe.", delete_after=10)
+            except Exception:
+                pass
             return
 
         token = token_found
@@ -134,7 +148,10 @@ class VerificationBot(commands.Bot):
                 conn.commit()
         except Exception as e:
             logger.error(f"Erreur lors de la mise à jour du code pour token {token}: {e}")
-            await message.channel.send("❌ Erreur interne lors de la sauvegarde du code.", delete_after=10)
+            try:
+                await message.channel.send("❌ Erreur interne lors de la sauvegarde du code.", delete_after=10)
+            except Exception:
+                pass
             return
 
         # Supprimer le message initial dans "numero a verifier" s'il existe
@@ -175,7 +192,6 @@ class VerificationBot(commands.Bot):
         try:
             await code_channel.send(f"✅ Code enregistré et embed publié pour le jeton `{token}` (par {message.author.mention})")
         except Exception:
-            # fallback
             pass
 
 def main():

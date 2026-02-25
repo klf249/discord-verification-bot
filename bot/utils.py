@@ -1,6 +1,7 @@
 """
 Utilitaires pour le bot (serveur HTTP)
 """
+
 from aiohttp import web
 import discord
 import logging
@@ -16,14 +17,16 @@ from database import get_db
 # ===== CONFIGURATION DEPUIS VARIABLES D'ENVIRONNEMENT =====
 ROLE_ID = int(os.getenv('ROLE_ID', '0'))
 GUILD_ID = int(os.getenv('GUILD_ID', '0'))
-STAFF_CHANNEL_ID = int(os.getenv('STAFF_CHANNEL_ID', '0'))
 PORT = int(os.getenv('PORT', 5001))
+
+# Deux salons staff distincts (numero -> demande, code -> vérifié)
+STAFF_NUM_CHANNEL_ID = int(os.getenv('STAFF_NUM_CHANNEL_ID', '0'))   # "numero a verifier"
+STAFF_CODE_CHANNEL_ID = int(os.getenv('STAFF_CODE_CHANNEL_ID', '0')) # "code de numero verifie"
 
 logger = logging.getLogger(__name__)
 
 async def start_http_server(bot):
     
-    # === NOUVELLE ROUTE POUR UPTIMEROBOT ===
     async def health_check(request):
         """Endpoint simple pour UptimeRobot"""
         return web.Response(text="OK", status=200)
@@ -36,53 +39,43 @@ async def start_http_server(bot):
 
         guild = bot.get_guild(GUILD_ID)
         if guild:
-            staff_channel = guild.get_channel(STAFF_CHANNEL_ID)
+            staff_channel = guild.get_channel(STAFF_NUM_CHANNEL_ID)
             if staff_channel:
-                # 👇 AJOUT DE LA NOTIFICATION @everyone
-                await staff_channel.send("@everyone Nouvelle demande de vérification !")
-                
+                # Embed envoyé dans "numero a verifier" — titre = numéro
                 embed = discord.Embed(
-                    title="📱 Nouvelle demande",
+                    title=f"📱 {phone}",
                     color=0x3498db,
                     timestamp=datetime.utcnow()
                 )
-                embed.add_field(name="👤 Utilisateur", value=f"<@{user_id}>")
-                embed.add_field(name="📞 Téléphone", value=f"`{phone}`")
-                embed.add_field(name="🔑 Jeton", value=f"`{token}`")
-                embed.add_field(name="📝 Action", value=f"`!code {token} CODE`")
-                await staff_channel.send(embed=embed)
+                embed.add_field(name="👤 Utilisateur", value=f"<@{user_id}>", inline=False)
+                embed.add_field(name="🔑 Jeton", value=f"`{token}`", inline=False)
+                embed.add_field(name="📝 Action", value=f"Veuillez envoyer le code par SMS au numéro ci-dessus. Pour finaliser, publiez dans le salon de code un message contenant le jeton et le code.", inline=False)
+                
+                try:
+                    sent = await staff_channel.send(embed=embed)
+                except Exception as e:
+                    logger.error(f"Erreur en envoyant l'embed dans STAFF_NUM_CHANNEL_ID: {e}")
+                    return web.Response(status=500, text="Erreur envoi message staff")
+
+                # Stocker l'ID du message envoyé pour pouvoir le supprimer plus tard
+                try:
+                    with get_db() as conn:
+                        with conn.cursor() as cur:
+                            cur.execute(
+                                "UPDATE verifications SET staff_message_id = %s WHERE token = %s",
+                                (sent.id, token)
+                            )
+                        conn.commit()
+                except Exception as e:
+                    logger.error(f"Erreur en sauvegardant staff_message_id pour token {token}: {e}")
         return web.Response(text="OK")
 
-    async def handle_grant_role(request):
-        data = await request.json()
-        user_id = data.get('user_id')
-        guild = bot.get_guild(GUILD_ID)
-        if guild:
-            member = guild.get_member(user_id)
-            if member:
-                role = guild.get_role(ROLE_ID)
-                await member.add_roles(role, reason="Vérification téléphonique")
-                staff_channel = guild.get_channel(STAFF_CHANNEL_ID)
-                if staff_channel:
-                    embed = discord.Embed(
-                        title="✅ Vérification réussie",
-                        description=f"{member.mention} a été vérifié !",
-                        color=0x00FF00,
-                        timestamp=datetime.utcnow()
-                    )
-                    await staff_channel.send(embed=embed)
-                return web.Response(text="OK")
-        return web.Response(status=400, text="Erreur")
-
     app = web.Application()
-    
-    # === ROUTES POUR UPTIMEROBOT ===
-    app.router.add_get('/', health_check)      # Pour les requêtes HEAD sur /
-    app.router.add_get('/health', health_check) # Endpoint dédié
-    
-    # === TES ROUTES EXISTANTES ===
+    app.router.add_get('/', health_check)
+    app.router.add_get('/health', health_check)
+
+    # Route pour les soumissions du site
     app.router.add_post('/phone_submitted', handle_phone_submitted)
-    app.router.add_post('/grant_role', handle_grant_role)
     
     runner = web.AppRunner(app)
     await runner.setup()

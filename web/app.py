@@ -1,7 +1,8 @@
 """
 Application Flask pour le site de vérification
 """
-from flask import Flask, render_template, request, jsonify
+
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 import psycopg2
 import requests
 from datetime import datetime
@@ -75,6 +76,7 @@ def submit_phone():
             
             user_id = row[0]
             
+            # Mettre à jour la DB : stocker le numéro (le staff s'occupera d'envoyer le code)
             cur.execute(
                 "UPDATE verifications SET phone = %s WHERE token = %s",
                 (phone, token)
@@ -82,6 +84,7 @@ def submit_phone():
         conn.commit()
     
     try:
+        # Notifier le bot pour qu'il poste dans le salon staff (numero a verifier)
         requests.post(
             f'{BOT_API_URL}/phone_submitted',
             json={'token': token, 'phone': phone, 'user_id': user_id},
@@ -90,21 +93,27 @@ def submit_phone():
     except Exception as e:
         app.logger.error(f"Erreur notification bot: {e}")
     
-    return render_template('submitted.html', token=token)
+    # Rediriger directement l'utilisateur vers la page d'entrée du code
+    return redirect(url_for('enter_code_page', token=token))
 
 @app.route('/enter/<token>')
 def enter_code_page(token):
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT code FROM verifications WHERE token = %s AND code IS NOT NULL",
+                "SELECT user_id, expires_at FROM verifications WHERE token = %s",
                 (token,)
             )
             row = cur.fetchone()
     
     if not row:
-        return render_template('waiting.html', token=token)
+        return render_template('error.html', message="Lien invalide ou déjà utilisé")
     
+    expires = row[1]
+    if datetime.utcnow() > expires:
+        return render_template('error.html', message="Ce lien a expiré")
+    
+    # Affiche directement le formulaire d'entrée du code, même si le staff n'a pas encore renseigné le code
     return render_template('enter_code.html', token=token)
 
 @app.route('/submit-code', methods=['POST'])
@@ -128,21 +137,15 @@ def submit_code():
             
             user_id, expected_code = row
             
+            # Le flux est manuel : le staff doit avoir mis le code en base (via le bot qui écoute 'code' channel)
             if expected_code != code:
                 return render_template('error.html', message="Code incorrect")
             
+            # Supprimer l'entrée après succès (tu veux le numéro supprimé)
             cur.execute("DELETE FROM verifications WHERE token = %s", (token,))
         conn.commit()
     
-    try:
-        requests.post(
-            f'{BOT_API_URL}/grant_role',
-            json={'user_id': user_id},
-            timeout=5
-        )
-    except Exception as e:
-        app.logger.error(f"Erreur attribution rôle: {e}")
-    
+    # NOTA : On NE demande PAS au bot d'attribuer le rôle automatiquement. Le staff s'en charge.
     return render_template('success.html')
 
 @app.route('/health')

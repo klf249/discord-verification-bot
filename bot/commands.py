@@ -1,5 +1,5 @@
 """
-Commandes du bot Discord
+Commandes du bot Discord (version minimale: uniquement !setup / !setup_default)
 """
 import discord
 from discord.ext import commands
@@ -15,11 +15,10 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
 
-from database import get_db, cleanup_expired
+from database import get_db  # utilisé pour insérer le token
 
 # ===== CONFIGURATION DEPUIS VARIABLES D'ENVIRONNEMENT =====
 SITE_URL = os.getenv('SITE_URL', 'https://verification-site-pkos.onrender.com')
-ROLE_ID = int(os.getenv('ROLE_ID', '0'))
 SESSION_EXPIRY_HOURS = int(os.getenv('SESSION_EXPIRY_HOURS', '1'))
 DEFAULT_WELCOME_TITLE = os.getenv('DEFAULT_WELCOME_TITLE', '🌟 Bienvenue sur le serveur !')
 DEFAULT_WELCOME_DESCRIPTION = os.getenv('DEFAULT_WELCOME_DESCRIPTION', 'Vérifie ton compte pour accéder à tous les salons')
@@ -29,7 +28,7 @@ DEFAULT_COLOR = int(os.getenv('DEFAULT_COLOR', '0x5865F2'), 16)
 
 logger = logging.getLogger(__name__)
 
-# Verrou pour éviter les doubles exécutions de commandes
+# Verrou pour éviter les doubles exécutions de commandes interactives
 user_locks = defaultdict(asyncio.Lock)
 
 class VerifyButton(Button):
@@ -83,7 +82,6 @@ class VerifyView(View):
         self.add_item(VerifyButton())
 
 async def setup_commands(bot):
-    
     # === COMMANDE INTERACTIVE POUR PERSONNALISER L'EMBED ===
     @bot.command(name="setup", aliases=["config"])
     @commands.has_permissions(administrator=True)
@@ -108,7 +106,7 @@ async def setup_commands(bot):
                 await ctx.send("Exemple: `1️⃣ Clique sur le bouton, 2️⃣ Entre ton numéro, 3️⃣ Reçois un code, 4️⃣ Accès accordé`")
                 await ctx.send("📝 **Instructions ?** (sépare les étapes par des virgules ou \\n)")
                 msg = await bot.wait_for('message', timeout=60.0, check=check)
-                instructions = msg.content.replace(",", "\n")
+                instructions = msg.content.replace(",", "\\n")
                 
                 await ctx.send("📝 **Message de confidentialité ?**")
                 await ctx.send("Exemple: `Ton numéro est supprimé après vérification`")
@@ -128,7 +126,11 @@ async def setup_commands(bot):
                 if color_input in color_map:
                     color = color_map[color_input]
                 elif color_input.startswith("#"):
-                    color = int(color_input[1:], 16)
+                    try:
+                        color = int(color_input[1:], 16)
+                    except Exception:
+                        color = 0x5865F2
+                        await ctx.send("⚠️ Couleur non reconnue, j'utilise le bleu Discord")
                 else:
                     color = 0x5865F2
                     await ctx.send("⚠️ Couleur non reconnue, j'utilise le bleu Discord")
@@ -166,94 +168,7 @@ async def setup_commands(bot):
         await ctx.message.delete()
         logger.info(f"✅ Embed par défaut créé par {ctx.author}")
 
-    # === COMMANDE CODE ===
-    @bot.command(name="code")
-    @commands.has_permissions(administrator=True)
-    async def code_command(ctx, token: str = None, code: str = None):
-        cleanup_expired()
-        if not token:
-            with get_db() as conn:
-                with conn.cursor() as cur:
-                    cur.execute(
-                        "SELECT token, user_id, phone, expires_at FROM verifications WHERE phone IS NOT NULL AND code IS NULL ORDER BY expires_at DESC"
-                    )
-                    pending = cur.fetchall()
-            if not pending:
-                await ctx.send(embed=discord.Embed(title="📋 Aucune demande en attente", color=0xFFA500))
-                return
-            embed = discord.Embed(title=f"📋 Demandes en attente ({len(pending)})", color=0x3498db)
-            for p in pending[:5]:
-                expires = p[3]
-                if isinstance(expires, str):
-                    expires = datetime.fromisoformat(expires)
-                minutes = int((expires - datetime.utcnow()).total_seconds() / 60)
-                embed.add_field(
-                    name=f"Jeton: {p[0][:8]}...",
-                    value=f"👤 <@{p[1]}>\n📞 {p[2]}\n⏰ Expire dans {minutes} min\n📝 `!code {p[0]} CODE`",
-                    inline=False
-                )
-            await ctx.send(embed=embed)
-            return
-
-        if not code:
-            await ctx.send("❌ Utilisation: `!code <jeton> <code>`")
-            return
-
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "UPDATE verifications SET code = %s, staff_id = %s WHERE token = %s AND code IS NULL",
-                    (code, ctx.author.id, token)
-                )
-                if cur.rowcount == 0:
-                    await ctx.send("❌ Jeton invalide ou déjà utilisé")
-                    return
-                cur.execute(
-                    "SELECT user_id, phone FROM verifications WHERE token = %s",
-                    (token,)
-                )
-                row = cur.fetchone()
-                if not row:
-                    await ctx.send("❌ Erreur : jeton introuvable après mise à jour")
-                    return
-                user_id, phone = row
-            conn.commit()
-
-        # Embed pour le staff : code visible, pas d'envoi automatique
-        embed = discord.Embed(
-            title="✅ Code généré – À envoyer par SMS",
-            color=0x00FF00,
-            description=f"**Code** : `{code}`\n**Téléphone** : `{phone}`\n**Utilisateur** : <@{user_id}>"
-        )
-        embed.add_field(name="🔗 Lien pour l'utilisateur", value=f"{SITE_URL}/enter/{token}", inline=False)
-        embed.set_footer(text="Envoie ce code manuellement par SMS à l'utilisateur.")
-        await ctx.send(embed=embed)
-
-    # === COMMANDE STATS ===
-    @bot.command(name="stats")
-    @commands.has_permissions(administrator=True)
-    async def stats_command(ctx):
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT COUNT(*) FROM verifications")
-                total = cur.fetchone()[0]
-                cur.execute("SELECT COUNT(*) FROM verifications WHERE phone IS NOT NULL AND code IS NULL")
-                pending = cur.fetchone()[0]
-                cur.execute("SELECT COUNT(*) FROM verifications WHERE code IS NOT NULL")
-                validated = cur.fetchone()[0]
-        embed = discord.Embed(title="📊 Statistiques", color=0x3498db)
-        embed.add_field(name="Total", value=str(total))
-        embed.add_field(name="En attente", value=str(pending))
-        embed.add_field(name="Validés", value=str(validated))
-        await ctx.send(embed=embed)
-
-    # === COMMANDE CLEAN ===
-    @bot.command(name="clean")
-    @commands.has_permissions(administrator=True)
-    async def clean_command(ctx):
-        cleaned = cleanup_expired()
-        await ctx.send(f"🧹 {cleaned} jetons expirés supprimés")
-
+    # NOTE : pas d'autres commandes staff (comme !code, !stats, !clean)
     return bot
 
 def setup_views(bot):

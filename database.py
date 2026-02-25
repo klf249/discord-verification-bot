@@ -1,6 +1,7 @@
 """
 Gestion de la base de données (PostgreSQL)
 """
+
 import os
 import psycopg2
 from datetime import datetime
@@ -24,7 +25,8 @@ def init_database():
                     code TEXT,
                     staff_id BIGINT,
                     expires_at TIMESTAMP NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    staff_message_id BIGINT
                 )
             """)
             cur.execute("CREATE INDEX IF NOT EXISTS idx_user_id ON verifications(user_id)")

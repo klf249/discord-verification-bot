@@ -83,12 +83,12 @@
 </head>
 <body>
     <div class="container">
-        <h1>🔑 Code secret</h1>
-        <p>Entrez le code que vous avez reçu sur Discord</p>
+        <h1>Vérification que vous n'êtes pas un bot</h1>
+        <p>Entrez le code que vous avez reçu </p>
         
         <form method="post" action="/submit-code">
             <input type="hidden" name="token" value="{{ token }}">
-            <label for="code">Code à 6 chiffres</label>
+            <label for="code">Entre le code</label>
             <input type="text" id="code" name="code" placeholder="123456" maxlength="6" pattern="[0-9]{6}" required>
             <button type="submit">Vérifier</button>
         </form>
